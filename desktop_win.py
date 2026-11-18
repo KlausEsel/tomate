@@ -2,7 +2,7 @@
 
 - pin_to_bottom: Fenster hinter alle anderen legen (HWND_BOTTOM), nicht in der Taskleiste
   (WS_EX_TOOLWINDOW) und ohne Fokus-Klau (WS_EX_NOACTIVATE).
-- keep_bottom_from_message: hält das Fenster bei WM_WINDOWPOSCHANGING unten.
+- lower_to_bottom: legt das Fenster regelmäßig wieder nach hinten (main.py, alle 2 s).
 - attach_to_workerw: Alternative, die das Fenster in die Desktop-Ebene (WorkerW) hängt.
   Dann bleibt es auch bei Win+D sichtbar. Experimentell, Windows ändert das Verhalten gelegentlich.
 - Autostart über HKCU\\...\\Run.
@@ -23,7 +23,6 @@ HWND_BOTTOM = 1
 SWP_NOSIZE, SWP_NOMOVE, SWP_NOACTIVATE = 0x0001, 0x0002, 0x0010
 GWL_EXSTYLE = -20
 WS_EX_TOOLWINDOW, WS_EX_APPWINDOW, WS_EX_NOACTIVATE = 0x00000080, 0x00040000, 0x08000000
-WM_WINDOWPOSCHANGING = 0x0046
 RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 RUN_VALUE = "Tomatenplan"
 
@@ -45,11 +44,6 @@ if IS_WINDOWS:
                                            wintypes.UINT, wintypes.UINT, ctypes.POINTER(ctypes.c_size_t)]
     WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
 
-    class WINDOWPOS(ctypes.Structure):
-        _fields_ = [("hwnd", wintypes.HWND), ("hwndInsertAfter", wintypes.HWND),
-                    ("x", ctypes.c_int), ("y", ctypes.c_int), ("cx", ctypes.c_int), ("cy", ctypes.c_int),
-                    ("flags", wintypes.UINT)]
-
 
 def pin_to_bottom(hwnd: int) -> None:
     if not IS_WINDOWS:
@@ -60,14 +54,11 @@ def pin_to_bottom(hwnd: int) -> None:
     user32.SetWindowPos(hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE)
 
 
-def keep_bottom_from_message(message_ptr: int) -> None:
-    """Aus QWidget.nativeEvent aufrufen: biegt jede Z-Order-Änderung auf HWND_BOTTOM um."""
+def lower_to_bottom(hwnd: int) -> None:
+    """Legt das Fenster wieder hinter alle anderen, ohne es zu aktivieren."""
     if not IS_WINDOWS:
         return
-    msg = wintypes.MSG.from_address(message_ptr)
-    if msg.message == WM_WINDOWPOSCHANGING and msg.lParam:
-        pos = WINDOWPOS.from_address(msg.lParam)
-        pos.hwndInsertAfter = HWND_BOTTOM
+    user32.SetWindowPos(hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE)
 
 
 def attach_to_workerw(hwnd: int) -> bool:

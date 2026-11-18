@@ -57,6 +57,10 @@ class App:
 
         # Wochenwechsel um Mitternacht sofort übernehmen (sonst spätestens beim nächsten Intervall).
         self._day = None
+        # Sicher statt Eingriff in Windows-Nachrichten: Fenster regelmäßig wieder nach hinten legen.
+        self._repin = QTimer()
+        self._repin.timeout.connect(self._keep_bottom)
+        self._repin.start(2_000)
         self._daycheck = QTimer()
         self._daycheck.timeout.connect(self._check_day)
         self._daycheck.start(60_000)
@@ -80,6 +84,10 @@ class App:
         if self.cfg["desktop_mode"] == "workerw" and desktop_win.attach_to_workerw(hwnd):
             return
         desktop_win.pin_to_bottom(hwnd)
+
+    def _keep_bottom(self) -> None:
+        if self.widget.isVisible() and self.cfg["desktop_mode"] == "bottom":
+            desktop_win.lower_to_bottom(int(self.widget.winId()))
 
     def _check_day(self) -> None:
         from datetime import date
