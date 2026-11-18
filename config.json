@@ -1,0 +1,18 @@
+{
+  "start_hour": 9,
+  "end_hour": 20,
+  "days": [0, 1, 2, 3, 4],
+  "refresh_seconds": 60,
+  "retry_seconds": 30,
+  "calendar": "",
+  "theme": "system",
+  "hide_private": true,
+  "language": "de",
+  "opacity": 92,
+  "geometry": null,
+  "desktop_mode": "bottom",
+  "start_outlook_if_closed": false,
+  "weekend_shows_next_week": true,
+  "click_opens_in_outlook": true,
+  "outlook_date_format": ""
+}
