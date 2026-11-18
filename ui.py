@@ -5,6 +5,7 @@ Das verhindert Flackern und Speicherzuwachs bei häufigen Aktualisierungen.
 """
 from __future__ import annotations
 
+import logging
 import math
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
@@ -176,6 +177,7 @@ class ScheduleWidget(QWidget):
         self._hits: list[tuple[QRectF, Event, Placement | None]] = []
         self._outside_hits: list[tuple[QRectF, str]] = []
         self._drag: tuple[str, QPoint, QRect] | None = None
+        self._native_failed = False
 
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool
                             | Qt.WindowType.WindowStaysOnBottomHint | Qt.WindowType.WindowDoesNotAcceptFocus)
@@ -486,9 +488,13 @@ class ScheduleWidget(QWidget):
         self.update()
 
     def nativeEvent(self, event_type, message):
-        if (desktop_win.IS_WINDOWS and self.cfg["desktop_mode"] == "bottom"
-                and bytes(event_type) == b"windows_generic_MSG"):
-            desktop_win.keep_bottom_from_message(int(message))
+        if desktop_win.IS_WINDOWS and self.cfg["desktop_mode"] == "bottom" and not self._native_failed:
+            try:
+                if bytes(event_type) == b"windows_generic_MSG":
+                    desktop_win.keep_bottom_from_message(int(message))
+            except Exception:  # nie wegen der Z-Order abstürzen; dann bleibt nur pin_to_bottom aktiv
+                self._native_failed = True
+                logging.getLogger(__name__).exception("nativeEvent deaktiviert")
         return super().nativeEvent(event_type, message)
 
 

@@ -6,3 +6,4 @@ dist/
 *.spec
 tomatenplan.log
 tomatenplan.lock
+tomatenplan-fehler.txt

@@ -6,8 +6,10 @@ Start:  pythonw main.py          (mit Outlook)
 from __future__ import annotations
 
 import argparse
+import ctypes
 import logging
 import sys
+import traceback
 
 from PyQt6.QtCore import QLockFile, QObject, QTimer, pyqtSignal
 from PyQt6.QtGui import QAction, QGuiApplication, QIcon
@@ -153,7 +155,26 @@ class App:
         return self.qapp.exec()
 
 
+def _report_crash(exc_type, exc, tb) -> None:
+    """Zeigt jeden unerwarteten Fehler an, statt dass sich das Fenster wortlos schließt.
+
+    Die Meldung landet zusätzlich in tomatenplan-fehler.txt neben main.py (ohne Termininhalte)."""
+    text = "".join(traceback.format_exception(exc_type, exc, tb))
+    log.critical("Unerwarteter Fehler:\n%s", text)
+    target = config.config_path().with_name("tomatenplan-fehler.txt")
+    try:
+        target.write_text(text, encoding="utf-8")
+    except OSError:
+        pass
+    print(text, file=sys.stderr)
+    if sys.platform == "win32":
+        ctypes.windll.user32.MessageBoxW(
+            None, f"Tomatenplan hat einen Fehler gemeldet:\n\n{text[-1500:]}\n\nGespeichert in:\n{target}",
+            "Tomatenplan", 0x10)
+
+
 def main() -> int:
+    sys.excepthook = _report_crash
     parser = argparse.ArgumentParser(description="Tomatenplan")
     parser.add_argument("--demo", action="store_true", help="Beispieldaten statt Outlook")
     args = parser.parse_args()
